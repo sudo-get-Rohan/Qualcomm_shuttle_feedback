@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shuttle Feedback</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        select {
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #e1e4e8;
+            border-radius: 12px;
+            background-color: #f8f9fa;
+            width: 35%; /* Takes up roughly 1/3 */
+            appearance: none; /* Removes default arrow for cleaner look on some devices */
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"] {
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #e1e4e8;
+            border-radius: 12px;
+            background-color: #f8f9fa;
+            width: 65%; /* Takes up rest of space */
+            text-transform: uppercase; /* Visually forces capitals */
+            outline: none;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: #007bff;
+            background-color: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active {
+            background-color: #0056b3;
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Enter Vehicle No</h2>
+        
+        <div class="input-group">
+            <select id="stateCode">
+                <option value="TG">TG</option>
+                <option value="TS">TS</option>
+            </select>
+            
+            <input type="text" id="vehicleNum" placeholder="09EA1234" maxlength="10" autocapitalize="characters">
+        </div>
+
+        <button onclick="openFeedback()">GO</button>
+    </div>
+
+    <script>
+        const inputField = document.getElementById('vehicleNum');
+
+        // Force input to be uppercase in real-time logic (not just visual CSS)
+        inputField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Allow pressing "Enter" on the keyboard to trigger the button
+        inputField.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                openFeedback();
+            }
+        });
+
+        function openFeedback() {
+            const state = document.getElementById('stateCode').value;
+            let number = inputField.value.trim();
+
+            if (!number) {
+                alert("Please enter the vehicle number.");
+                return;
+            }
+
+            // Combine State code + Number (removes any accidental spaces)
+            const fullVehicleNo = state + number;
+
+            // Base URL
+            const baseUrl = "https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html";
+            
+            // Construct final URL with parameters
+            const finalUrl = `${baseUrl}?centerid=5&vehicleno=${fullVehicleNo}`;
+
+            // Open in current tab
+            window.location.href = finalUrl;
+        }
+    </script>
+
+</body>
+</html>
