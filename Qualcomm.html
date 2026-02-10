@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shuttle Feedback</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         * {
             box-sizing: border-box;
@@ -29,10 +30,11 @@
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             text-align: center;
+            position: relative; /* Needed to position the camera button */
         }
 
         h2 {
-            margin-top: 0;
+            margin-top: 10px; /* Added space for the button */
             margin-bottom: 25px;
             color: #333;
             font-size: 24px;
@@ -50,8 +52,8 @@
             border: 2px solid #e1e4e8;
             border-radius: 12px;
             background-color: #f8f9fa;
-            width: 35%; /* Takes up roughly 1/3 */
-            appearance: none; /* Removes default arrow for cleaner look on some devices */
+            width: 35%;
+            appearance: none;
             text-align: center;
             font-weight: bold;
             color: #333;
@@ -63,8 +65,8 @@
             border: 2px solid #e1e4e8;
             border-radius: 12px;
             background-color: #f8f9fa;
-            width: 65%; /* Takes up rest of space */
-            text-transform: uppercase; /* Visually forces capitals */
+            width: 65%;
+            text-transform: uppercase;
             outline: none;
         }
 
@@ -73,7 +75,7 @@
             background-color: #fff;
         }
 
-        button {
+        button.submit-btn {
             width: 100%;
             padding: 16px;
             font-size: 20px;
@@ -87,17 +89,69 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        button:active {
+        button.submit-btn:active {
             background-color: #0056b3;
             transform: scale(0.98);
+        }
+
+        /* Camera Button Styles */
+        .camera-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e1e4e8;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .camera-btn:active {
+            background-color: #d1d5db;
+            transform: scale(0.95);
+        }
+
+        .camera-icon {
+            width: 20px;
+            height: 20px;
+            fill: #555;
+        }
+
+        /* Loading Overlay for OCR */
+        #ocr-status {
+            font-size: 14px;
+            color: #007bff;
+            margin-bottom: 10px;
+            min-height: 20px;
+            font-weight: 500;
+        }
+
+        /* Hide the actual file input */
+        #cameraInput {
+            display: none;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <button class="camera-btn" onclick="triggerCamera()" title="Scan Number Plate">
+            <svg class="camera-icon" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/> <path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+                <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+        </button>
+
         <h2>Enter Vehicle No</h2>
         
+        <div id="ocr-status"></div>
+
         <div class="input-group">
             <select id="stateCode">
                 <option value="TG">TG</option>
@@ -107,26 +161,93 @@
             <input type="text" id="vehicleNum" placeholder="09EA1234" maxlength="10" autocapitalize="characters">
         </div>
 
-        <button onclick="openFeedback()">GO</button>
+        <button class="submit-btn" onclick="openFeedback()">GO</button>
+        
+        <input type="file" id="cameraInput" accept="image/*" capture="environment">
     </div>
 
     <script>
         const inputField = document.getElementById('vehicleNum');
+        const stateSelect = document.getElementById('stateCode');
+        const cameraInput = document.getElementById('cameraInput');
+        const statusDiv = document.getElementById('ocr-status');
 
-        // Force input to be uppercase in real-time logic (not just visual CSS)
+        // Force input to be uppercase logic
         inputField.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
 
-        // Allow pressing "Enter" on the keyboard to trigger the button
+        // Enter key support
         inputField.addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 openFeedback();
             }
         });
 
+        function triggerCamera() {
+            cameraInput.click();
+        }
+
+        // Listen for file selection (photo taken)
+        cameraInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            statusDiv.innerText = "Scanning number plate...";
+            statusDiv.style.color = "#007bff";
+
+            try {
+                // Tesseract OCR Processing
+                const result = await Tesseract.recognize(
+                    file,
+                    'eng',
+                    { 
+                        // Logger is optional, useful for debugging
+                        // logger: m => console.log(m) 
+                    }
+                );
+
+                const text = result.data.text;
+                processScannedText(text);
+
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "Scan failed. Please type manually.";
+                statusDiv.style.color = "red";
+            }
+        });
+
+        function processScannedText(rawText) {
+            // 1. Remove all non-alphanumeric characters (spaces, dashes, etc.)
+            let cleanText = rawText.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+            // 2. Simple logic to separate State vs Number
+            // If text starts with TG or TS, extract it.
+            if (cleanText.startsWith("TG") || cleanText.startsWith("TS")) {
+                const detectedState = cleanText.substring(0, 2);
+                const restOfNumber = cleanText.substring(2);
+
+                stateSelect.value = detectedState;
+                inputField.value = restOfNumber;
+                statusDiv.innerText = "Scanned successfully!";
+                statusDiv.style.color = "green";
+            } 
+            // If it starts with AP, KA, MH etc, allow it but default to just putting it in the box
+            // Or if it's just the numbers (camera was too close)
+            else {
+                inputField.value = cleanText;
+                statusDiv.innerText = "Please verify the number.";
+                statusDiv.style.color = "#e67e22";
+            }
+            
+            // Clear status after 3 seconds
+            setTimeout(() => {
+                statusDiv.innerText = "";
+            }, 3000);
+        }
+
         function openFeedback() {
-            const state = document.getElementById('stateCode').value;
+            const state = stateSelect.value;
             let number = inputField.value.trim();
 
             if (!number) {
@@ -134,16 +255,10 @@
                 return;
             }
 
-            // Combine State code + Number (removes any accidental spaces)
             const fullVehicleNo = state + number;
-
-            // Base URL
             const baseUrl = "https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html";
-            
-            // Construct final URL with parameters
             const finalUrl = `${baseUrl}?centerid=5&vehicleno=${fullVehicleNo}`;
 
-            // Open in current tab
             window.location.href = finalUrl;
         }
     </script>
