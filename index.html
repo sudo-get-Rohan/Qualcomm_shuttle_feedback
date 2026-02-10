@@ -1,169 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shuttle Feedback</title>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
             padding: 20px;
         }
 
         .container {
             width: 100%;
-            max-width: 400px;
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 420px;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 32px 28px;
+            border-radius: 24px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 60px rgba(99, 102, 241, 0.08);
             text-align: center;
-            position: relative; /* Needed to position the camera button */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            right: -50%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 4px;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:active {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        .icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: #a5b4fc;
         }
 
         h2 {
-            margin-top: 10px; /* Added space for the button */
-            margin-bottom: 25px;
-            color: #333;
-            font-size: 24px;
+            margin-bottom: 4px;
+            color: #f1f5f9;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .api-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        .api-badge.connected {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .api-badge.disconnected {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .input-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         select {
-            padding: 15px;
-            font-size: 18px;
-            border: 2px solid #e1e4e8;
-            border-radius: 12px;
-            background-color: #f8f9fa;
-            width: 35%;
-            appearance: none;
+            padding: 14px 8px;
+            font-size: 17px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 14px;
+            background-color: rgba(15, 23, 42, 0.6);
+            color: #e2e8f0;
+            width: 30%;
             text-align: center;
-            font-weight: bold;
-            color: #333;
+            font-weight: 600;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        select:focus {
+            border-color: #6366f1;
         }
 
         input[type="text"] {
-            padding: 15px;
-            font-size: 18px;
-            border: 2px solid #e1e4e8;
-            border-radius: 12px;
-            background-color: #f8f9fa;
-            width: 65%;
+            padding: 14px;
+            font-size: 17px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 14px;
+            background-color: rgba(15, 23, 42, 0.6);
+            color: #e2e8f0;
+            width: 70%;
             text-transform: uppercase;
             outline: none;
+            font-family: inherit;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            transition: border-color 0.3s;
         }
 
-        input[type="text"]:focus, select:focus {
-            border-color: #007bff;
-            background-color: #fff;
+        input[type="text"]::placeholder {
+            color: #475569;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"]:focus {
+            border-color: #6366f1;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
         }
 
         button.submit-btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 20px;
-            font-weight: bold;
+            flex: 1;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
             color: white;
-            background-color: #007bff;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: background-color 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            font-family: inherit;
+            letter-spacing: 0.5px;
+            transition: transform 0.15s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
         }
 
         button.submit-btn:active {
-            background-color: #0056b3;
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
 
-        /* Camera Button Styles */
-        .camera-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #e1e4e8;
-            border: none;
+        button.camera-btn {
+            width: 54px;
+            height: 54px;
+            min-width: 54px;
+            border-radius: 14px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 2px solid rgba(99, 102, 241, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: background-color 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            transition: background 0.3s, border-color 0.3s;
         }
 
-        .camera-btn:active {
-            background-color: #d1d5db;
-            transform: scale(0.95);
+        button.camera-btn:active {
+            background: rgba(99, 102, 241, 0.3);
         }
 
         .camera-icon {
-            width: 20px;
-            height: 20px;
-            fill: #555;
+            width: 22px;
+            height: 22px;
+            fill: #a5b4fc;
         }
 
-        /* Loading Overlay for OCR */
         #ocr-status {
-            font-size: 14px;
-            color: #007bff;
-            margin-bottom: 10px;
+            font-size: 13px;
+            color: #a5b4fc;
+            margin-bottom: 12px;
             min-height: 20px;
             font-weight: 500;
+            transition: color 0.3s;
         }
 
-        /* Hide the actual file input */
         #cameraInput {
             display: none;
         }
+
+        .preview-area {
+            display: none;
+            margin-bottom: 14px;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .preview-area img {
+            width: 100%;
+            max-height: 180px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .preview-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 24px;
+            gap: 16px;
+        }
+
+        .spinner-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(99, 102, 241, 0.2);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .spinner-text {
+            color: #a5b4fc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal h3 {
+            color: #f1f5f9;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .modal p {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .modal p a {
+            color: #818cf8;
+            text-decoration: underline;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 14px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            color: #e2e8f0;
+            outline: none;
+            font-family: inherit;
+            margin-bottom: 14px;
+        }
+
+        .modal input:focus {
+            border-color: #6366f1;
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btns button {
+            flex: 1;
+            padding: 11px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+        }
+
+        .modal-btns .btn-cancel {
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .modal-btns .btn-save {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .flash-success {
+            animation: flashGreen 0.5s ease;
+        }
+
+        .flash-error {
+            animation: flashRed 0.5s ease;
+        }
+
+        @keyframes flashGreen {
+            0%, 100% { border-color: rgba(99, 102, 241, 0.3); }
+            50% { border-color: #22c55e; box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+        }
+
+        @keyframes flashRed {
+            0%, 100% { border-color: rgba(99, 102, 241, 0.3); }
+            50% { border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        }
     </style>
 </head>
+
 <body>
 
-    <div class="container">
-        <button class="camera-btn" onclick="triggerCamera()" title="Scan Number Plate">
-            <svg class="camera-icon" viewBox="0 0 24 24">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/> <path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-                <path d="M0 0h24v24H0z" fill="none"/>
-            </svg>
-        </button>
+    <div class="container" id="mainContainer">
+        <div class="spinner-overlay" id="spinnerOverlay">
+            <div class="spinner"></div>
+            <div class="spinner-text" id="spinnerText">Processing...</div>
+        </div>
 
-        <h2>Enter Vehicle No</h2>
-        
+        <div class="top-bar">
+            <button class="icon-btn" onclick="openSettings()" title="API Settings">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19.14,12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49,0,0,0,.12-.61l-1.92-3.32a.49.49,0,0,0-.59-.22l-2.39.96a7.04,7.04,0,0,0-1.62-.94l-.36-2.54a.48.48,0,0,0-.48-.41h-3.84a.48.48,0,0,0-.48.41l-.36,2.54a7.04,7.04,0,0,0-1.62.94l-2.39-.96a.49.49,0,0,0-.59.22L2.74,8.87a.48.48,0,0,0,.12.61l2.03,1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03,1.58a.49.49,0,0,0-.12.61l1.92,3.32a.49.49,0,0,0,.59.22l2.39-.96a7.04,7.04,0,0,0,1.62.94l.36,2.54a.48.48,0,0,0,.48.41h3.84a.48.48,0,0,0,.48-.41l.36-2.54a7.04,7.04,0,0,0,1.62-.94l2.39.96a.49.49,0,0,0,.59-.22l1.92-3.32a.49.49,0,0,0-.12-.61ZM12,15.6A3.6,3.6,0,1,1,15.6,12,3.6,3.6,0,0,1,12,15.6Z" />
+                </svg>
+            </button>
+        </div>
+
+        <h2>🚐 Shuttle Feedback</h2>
+        <p class="subtitle">Scan plate or enter vehicle number</p>
+        <div id="apiBadge" class="api-badge disconnected">NO API KEY</div>
+
         <div id="ocr-status"></div>
 
-        <div class="input-group">
+        <div class="preview-area" id="previewArea">
+            <img id="previewImg" src="" alt="Captured plate">
+            <button class="preview-close" onclick="clearPreview()" title="Clear">✕</button>
+        </div>
+
+        <div class="input-group" id="inputGroup">
             <select id="stateCode">
                 <option value="TG">TG</option>
                 <option value="TS">TS</option>
+                <option value="AP">AP</option>
+                <option value="KA">KA</option>
+                <option value="MH">MH</option>
+                <option value="DL">DL</option>
+                <option value="TN">TN</option>
+                <option value="KL">KL</option>
+                <option value="UP">UP</option>
+                <option value="RJ">RJ</option>
+                <option value="GJ">GJ</option>
+                <option value="HR">HR</option>
+                <option value="PB">PB</option>
+                <option value="MP">MP</option>
+                <option value="WB">WB</option>
             </select>
-            
             <input type="text" id="vehicleNum" placeholder="09EA1234" maxlength="10" autocapitalize="characters">
         </div>
 
-        <button class="submit-btn" onclick="openFeedback()">GO</button>
-        
+        <div class="btn-row">
+            <button class="submit-btn" onclick="openFeedback()">GO →</button>
+            <button class="camera-btn" onclick="triggerCamera()" title="Scan Number Plate">
+                <svg class="camera-icon" viewBox="0 0 24 24">
+                    <path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            </button>
+        </div>
+
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h3>⚙️ API Settings</h3>
+            <p>Enter your <strong>Google Gemini API key</strong>.<br>
+                Get one at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>
+            </p>
+            <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+                <button class="btn-save" onclick="saveApiKey()">Save</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -171,97 +489,158 @@
         const stateSelect = document.getElementById('stateCode');
         const cameraInput = document.getElementById('cameraInput');
         const statusDiv = document.getElementById('ocr-status');
+        const spinnerOverlay = document.getElementById('spinnerOverlay');
+        const spinnerText = document.getElementById('spinnerText');
+        const previewArea = document.getElementById('previewArea');
+        const previewImg = document.getElementById('previewImg');
+        const inputGroup = document.getElementById('inputGroup');
+        const apiBadge = document.getElementById('apiBadge');
+        const settingsModal = document.getElementById('settingsModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
 
-        // Force input to be uppercase logic
-        inputField.addEventListener('input', function() {
-            this.value = this.value.toUpperCase();
-        });
+        function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
-        // Enter key support
-        inputField.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                openFeedback();
-            }
-        });
-
-        function triggerCamera() {
-            cameraInput.click();
+        function updateBadge() {
+            const key = getApiKey();
+            apiBadge.textContent = key ? 'GEMINI AI ✓' : 'NO API KEY';
+            apiBadge.className = key ? 'api-badge connected' : 'api-badge disconnected';
         }
 
-        // Listen for file selection (photo taken)
+        function openSettings() {
+            apiKeyInput.value = getApiKey();
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettings() { settingsModal.classList.remove('active'); }
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            key ? localStorage.setItem('gemini_api_key', key) : localStorage.removeItem('gemini_api_key');
+            updateBadge();
+            closeSettings();
+        }
+
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+        updateBadge();
+
+        inputField.addEventListener('input', function () { this.value = this.value.toUpperCase(); });
+        inputField.addEventListener('keydown', (e) => { if (e.key === 'Enter') openFeedback(); });
+
+        function triggerCamera() { cameraInput.value = ''; cameraInput.click(); }
+        function showSpinner(text) { spinnerText.innerText = text; spinnerOverlay.classList.add('active'); }
+        function hideSpinner() { spinnerOverlay.classList.remove('active'); }
+        function clearPreview() { previewArea.style.display = 'none'; previewImg.src = ''; }
+        function flashSuccess() { inputGroup.classList.add('flash-success'); setTimeout(() => inputGroup.classList.remove('flash-success'), 600); }
+        function flashError() { inputGroup.classList.add('flash-error'); setTimeout(() => inputGroup.classList.remove('flash-error'), 600); }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function extractPlateWithGemini(file) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error('NO_KEY');
+
+            const base64Image = await fileToBase64(file);
+            const mimeType = file.type || 'image/jpeg';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const MAX_RETRIES = 3;
+            for (let i = 0; i <= MAX_RETRIES; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: "Extract ONLY the vehicle registration number. No spaces. Example: TG09EA1234. If not found, say NOT_FOUND." },
+                                    { inline_data: { mime_type: mimeType, data: base64Image } }
+                                ]
+                            }],
+                            generationConfig: { temperature: 0.1 }
+                        })
+                    });
+
+                    if (response.status === 429 && i < MAX_RETRIES) {
+                        const wait = Math.pow(2, i) * 2000;
+                        await new Promise(r => setTimeout(r, wait));
+                        continue;
+                    }
+
+                    if (!response.ok) throw new Error(response.status === 400 ? 'INVALID_KEY' : 'API_ERROR');
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    return text.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                } catch (err) {
+                    if (i === MAX_RETRIES) throw err;
+                }
+            }
+        }
+
         cameraInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            statusDiv.innerText = "Scanning number plate...";
-            statusDiv.style.color = "#007bff";
+            const objectUrl = URL.createObjectURL(file);
+            previewImg.src = objectUrl;
+            previewArea.style.display = 'block';
 
-            try {
-                // Tesseract OCR Processing
-                const result = await Tesseract.recognize(
-                    file,
-                    'eng',
-                    { 
-                        // Logger is optional, useful for debugging
-                        // logger: m => console.log(m) 
-                    }
-                );
-
-                const text = result.data.text;
-                processScannedText(text);
-
-            } catch (err) {
-                console.error(err);
-                statusDiv.innerText = "Scan failed. Please type manually.";
-                statusDiv.style.color = "red";
-            }
-        });
-
-        function processScannedText(rawText) {
-            // 1. Remove all non-alphanumeric characters (spaces, dashes, etc.)
-            let cleanText = rawText.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-
-            // 2. Simple logic to separate State vs Number
-            // If text starts with TG or TS, extract it.
-            if (cleanText.startsWith("TG") || cleanText.startsWith("TS")) {
-                const detectedState = cleanText.substring(0, 2);
-                const restOfNumber = cleanText.substring(2);
-
-                stateSelect.value = detectedState;
-                inputField.value = restOfNumber;
-                statusDiv.innerText = "Scanned successfully!";
-                statusDiv.style.color = "green";
-            } 
-            // If it starts with AP, KA, MH etc, allow it but default to just putting it in the box
-            // Or if it's just the numbers (camera was too close)
-            else {
-                inputField.value = cleanText;
-                statusDiv.innerText = "Please verify the number.";
-                statusDiv.style.color = "#e67e22";
-            }
-            
-            // Clear status after 3 seconds
-            setTimeout(() => {
-                statusDiv.innerText = "";
-            }, 3000);
-        }
-
-        function openFeedback() {
-            const state = stateSelect.value;
-            let number = inputField.value.trim();
-
-            if (!number) {
-                alert("Please enter the vehicle number.");
+            if (!getApiKey()) {
+                statusDiv.innerText = "⚠ Set API key first (⚙️)";
+                statusDiv.style.color = "#f59e0b";
+                flashError();
                 return;
             }
 
-            const fullVehicleNo = state + number;
-            const baseUrl = "https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html";
-            const finalUrl = `${baseUrl}?centerid=5&vehicleno=${fullVehicleNo}`;
+            showSpinner('Analyzing plate...');
+            try {
+                const plateText = await extractPlateWithGemini(file);
+                hideSpinner();
+                if (!plateText || plateText.includes('NOTFOUND') || plateText.length < 4) {
+                    statusDiv.innerText = "Detection failed. Try again.";
+                    statusDiv.style.color = "#ef4444";
+                    flashError();
+                } else {
+                    applyPlateNumber(plateText);
+                }
+            } catch (err) {
+                hideSpinner();
+                statusDiv.innerText = err.message === 'INVALID_KEY' ? "❌ Invalid Key" : "Error. Try again.";
+                statusDiv.style.color = "#ef4444";
+                flashError();
+            }
+            setTimeout(() => { statusDiv.innerText = ""; }, 5000);
+            URL.revokeObjectURL(objectUrl);
+        });
 
-            window.location.href = finalUrl;
+        const KNOWN_STATES = ['TG', 'TS', 'AP', 'KA', 'MH', 'DL', 'TN', 'KL', 'UP', 'RJ', 'GJ', 'HR', 'PB', 'MP', 'WB'];
+
+        function applyPlateNumber(plateText) {
+            const first2 = plateText.substring(0, 2);
+            if (KNOWN_STATES.includes(first2)) {
+                stateSelect.value = first2;
+                inputField.value = plateText.substring(2);
+            } else {
+                inputField.value = plateText;
+            }
+            statusDiv.innerText = "✓ Detected: " + plateText;
+            statusDiv.style.color = "#22c55e";
+            flashSuccess();
+        }
+
+        function openFeedback() {
+            const fullNo = stateSelect.value + inputField.value.trim().replace(/[^A-Z0-9]/gi, '').toUpperCase();
+            if (!inputField.value.trim()) return alert("Enter vehicle number.");
+            window.location.href = `https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html?centerid=5&vehicleno=${fullNo}`;
         }
     </script>
-
 </body>
+
 </html>
