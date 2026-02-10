@@ -1,0 +1,19 @@
+@echo off
+echo Adding remote origin...
+git remote add origin https://github.com/sudo-get-Rohan/Qualcomm_shuttle_feedback.git 2>nul
+if %errorlevel% neq 0 echo Remote origin might already exist, proceeding...
+
+echo Renaming branch to main...
+git branch -M main
+
+echo Staging files...
+git add .
+
+echo Committing files...
+git commit -m "Initial commit"
+
+echo Pushing to remote...
+git push -u origin main
+
+echo Done.
+pause
