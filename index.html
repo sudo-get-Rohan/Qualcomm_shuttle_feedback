@@ -118,16 +118,158 @@
             border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
-        .api-badge.disconnected {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
         .input-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .suggestions-list {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 14px;
+            overflow: hidden;
+            z-index: 20;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .suggestions-list.active {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 12px 16px;
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:active, .suggestion-item:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .suggestion-item strong {
+            color: #818cf8;
+        }
+
+        .recent-section {
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+            animation: fadeIn 0.3s ease;
+            width: 100%;
+        }
+
+        .recent-section.active {
+            display: block;
+        }
+
+        .recent-toggle {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .recent-toggle:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: #e2e8f0;
+        }
+
+        .recent-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        .recent-toggle.open svg {
+            transform: rotate(180deg);
+        }
+
+        .recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .recent-list.open {
+            max-height: 400px;
+            opacity: 1;
+        }
+
+        .recent-item {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .recent-item:active, .recent-item:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateX(4px);
+        }
+
+        .recent-item svg {
+            width: 16px;
+            height: 16px;
+            fill: #6366f1;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .recent-item:hover svg {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         select {
@@ -151,20 +293,69 @@
             border-color: #6366f1;
         }
 
+        .input-wrapper {
+            position: relative;
+            width: 70%;
+        }
+
         input[type="text"] {
             padding: 14px;
+            padding-right: 48px;
             font-size: 17px;
             border: 2px solid rgba(99, 102, 241, 0.3);
             border-radius: 14px;
             background-color: rgba(15, 23, 42, 0.6);
             color: #e2e8f0;
-            width: 70%;
+            width: 100%;
             text-transform: uppercase;
             outline: none;
             font-family: inherit;
             font-weight: 500;
             letter-spacing: 1.5px;
             transition: border-color 0.3s;
+        }
+
+        .mic-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mic-btn:active {
+            background: rgba(99, 102, 241, 0.3);
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .mic-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #a5b4fc;
+        }
+
+        .mic-btn.listening {
+            background: rgba(239, 68, 68, 0.15);
+            animation: pulse 1.5s infinite;
+        }
+
+        .mic-btn.listening svg {
+            fill: #ef4444;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
         input[type="text"]::placeholder {
@@ -467,7 +658,16 @@
                 <option value="TG">TG</option>
                 <option value="TS">TS</option>
             </select>
-            <input type="text" id="vehicleNum" placeholder="09EA1234" maxlength="10" autocapitalize="characters">
+            <div class="input-wrapper">
+                <input type="text" id="vehicleNum" placeholder="09EA1234" maxlength="10" autocapitalize="characters" autocomplete="off">
+                <button id="micBtn" class="mic-btn" onclick="toggleVoiceInput()" title="Voice Input">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                </button>
+                <div id="suggestionsList" class="suggestions-list"></div>
+            </div>
         </div>
 
         <div class="btn-row">
@@ -479,6 +679,16 @@
                     <circle cx="12" cy="12" r="3" />
                 </svg>
             </button>
+        </div>
+
+        <div id="recentSection" class="recent-section">
+            <button class="recent-toggle" onclick="toggleRecentList()">
+                <span>Recent Vehicles</span>
+                <svg id="recentToggleIcon" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5z"/>
+                </svg>
+            </button>
+            <div id="recentList" class="recent-list"></div>
         </div>
 
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
@@ -511,6 +721,12 @@
         const apiBadge = document.getElementById('apiBadge');
         const settingsModal = document.getElementById('settingsModal');
         const apiKeyInput = document.getElementById('apiKeyInput');
+        const micBtn = document.getElementById('micBtn');
+        const recentSection = document.getElementById('recentSection');
+        const recentList = document.getElementById('recentList');
+        const suggestionsList = document.getElementById('suggestionsList');
+
+        let allRecentVehicles = []; // Store it in memory for quick filtering
 
         function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
@@ -537,8 +753,108 @@
         settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
         updateBadge();
 
-        inputField.addEventListener('input', function () { this.value = this.value.toUpperCase(); });
+        function handleInputSuggestions() {
+            const val = inputField.value.trim().toUpperCase();
+            if (!val) {
+                suggestionsList.classList.remove('active');
+                return;
+            }
+
+            // Simple "contains" match prioritizing the ending portion which the user types
+            const state = stateSelect.value;
+            const matches = allRecentVehicles.filter(v => v.includes(val) || v.startsWith(state + val));
+
+            if (matches.length === 0) {
+                suggestionsList.classList.remove('active');
+                return;
+            }
+
+            suggestionsList.innerHTML = '';
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                
+                // Highlight the matched portion
+                let innerHtml = match;
+                if (match.startsWith(state + val)) {
+                    innerHtml = `<span>${state}</span><strong>${val}</strong><span>${match.substring((state + val).length)}</span>`;
+                } else {
+                    const idx = match.indexOf(val);
+                    if (idx > -1) {
+                         innerHtml = `<span>${match.substring(0, idx)}</span><strong>${val}</strong><span>${match.substring(idx + val.length)}</span>`;
+                    }
+                }
+                
+                div.innerHTML = innerHtml;
+
+                div.onmousedown = function(e) { 
+                    e.preventDefault(); // Prevent blur when clicking item
+                    applyPlateNumber(match);
+                    suggestionsList.classList.remove('active');
+                    openFeedback(); // Auto-submit
+                };
+                suggestionsList.appendChild(div);
+            });
+            suggestionsList.classList.add('active');
+        }
+
+        inputField.addEventListener('input', function () { 
+            this.value = this.value.toUpperCase(); 
+            handleInputSuggestions();
+        });
+        
+        inputField.addEventListener('focus', handleInputSuggestions);
+        inputField.addEventListener('blur', () => { setTimeout(() => { suggestionsList.classList.remove('active'); }, 150) });
         inputField.addEventListener('keydown', (e) => { if (e.key === 'Enter') openFeedback(); });
+
+        function renderRecentList() {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['recent_vehicles'], function(result) {
+                    allRecentVehicles = result.recent_vehicles || [];
+                    displayRecentList(allRecentVehicles);
+                });
+            } else {
+                allRecentVehicles = JSON.parse(localStorage.getItem('recent_vehicles') || '[]');
+                displayRecentList(allRecentVehicles);
+            }
+        }
+
+        function displayRecentList(recent) {
+            if (recent.length === 0) {
+                recentSection.classList.remove('active');
+                return;
+            }
+            recentList.innerHTML = '';
+            recent.forEach(no => {
+                const div = document.createElement('div');
+                div.className = 'recent-item';
+                
+                const textSpan = document.createElement('span');
+                textSpan.innerText = no;
+                div.appendChild(textSpan);
+
+                const arrowIcon = document.createElement('div');
+                arrowIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>`;
+                div.appendChild(arrowIcon);
+
+                div.onclick = function() { 
+                    applyPlateNumber(no);
+                    openFeedback(); // Auto-submit when clicking a recent item from the list
+                };
+                recentList.appendChild(div);
+            });
+            recentSection.classList.add('active');
+        }
+
+        // Render list immediately on load if anything exists
+        renderRecentList();
+
+        function toggleRecentList() {
+            const list = document.getElementById('recentList');
+            const toggle = document.querySelector('.recent-toggle');
+            if (list) list.classList.toggle('open');
+            if (toggle) toggle.classList.toggle('open');
+        }
 
         function triggerCamera() { cameraInput.value = ''; cameraInput.click(); }
         function showSpinner(text) { spinnerText.innerText = text; spinnerOverlay.classList.add('active'); }
@@ -649,10 +965,105 @@
             flashSuccess();
         }
 
+        function saveRecentVehicle(fullNo) {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['recent_vehicles'], function(result) {
+                    updateAndSaveList(result.recent_vehicles || [], fullNo, true);
+                });
+            } else {
+                let recent = JSON.parse(localStorage.getItem('recent_vehicles') || '[]');
+                updateAndSaveList(recent, fullNo, false);
+            }
+        }
+
+        function updateAndSaveList(recent, fullNo, useChromeStorage) {
+            const index = recent.indexOf(fullNo);
+            if (index > -1) {
+                recent.splice(index, 1);
+            }
+            recent.unshift(fullNo);
+            if (recent.length > 5) recent.pop(); // Keep max 5 recent vehicles
+            
+            allRecentVehicles = recent; // Update in-memory copy
+            renderRecentList(); // Re-render the bottom accordion to stay synced
+
+            if (useChromeStorage) {
+                chrome.storage.local.set({ 'recent_vehicles': recent });
+            } else {
+                localStorage.setItem('recent_vehicles', JSON.stringify(recent));
+            }
+        }
+
         function openFeedback() {
             const fullNo = stateSelect.value + inputField.value.trim().replace(/[^A-Z0-9]/gi, '').toUpperCase();
             if (!inputField.value.trim()) return alert("Enter vehicle number.");
+            saveRecentVehicle(fullNo);
             window.location.href = `https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html?centerid=5&vehicleno=${fullNo}`;
+        }
+
+        let recognition = null;
+        let isListening = false;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN'; // Works well for Indian vehicle plates
+
+            recognition.onstart = function() {
+                isListening = true;
+                micBtn.classList.add('listening');
+                statusDiv.innerText = "Listening...";
+                statusDiv.style.color = "#818cf8";
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                const formatted = transcript.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                
+                if (formatted) {
+                    applyPlateNumber(formatted);
+                } else {
+                    statusDiv.innerText = "Could not detect plate number.";
+                    statusDiv.style.color = "#ef4444";
+                    flashError();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error", event.error);
+                statusDiv.innerText = "Voice input failed: " + event.error;
+                statusDiv.style.color = "#ef4444";
+                flashError();
+                stopListening();
+            };
+
+            recognition.onend = function() {
+                stopListening();
+            };
+        } else {
+            if (micBtn) micBtn.style.display = 'none';
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert("Voice input is not supported in your browser.");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            if (statusDiv.innerText === "Listening...") {
+                setTimeout(() => { if (statusDiv.innerText === "Listening...") statusDiv.innerText = ""; }, 500);
+            }
         }
     </script>
 </body>
