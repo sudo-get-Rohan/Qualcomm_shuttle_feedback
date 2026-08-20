@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -181,6 +182,7 @@
   .hint{font-size:12px; color:var(--faint); text-align:center; margin-top:8px;}
 </style>
 </head>
+
 <body>
 <div class="wrap">
 
@@ -210,226 +212,402 @@
       <div class="reco" id="reco"></div>
     </div>
 
-    <div class="preview" id="preview"><span class="ph">Full number appears here</span></div>
+        <div class="btn-row">
+            <button class="submit-btn" onclick="openFeedback()">GO →</button>
+            <button class="camera-btn" onclick="triggerCamera()" title="Scan Number Plate">
+                <svg class="camera-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            </button>
+        </div>
 
-    <div class="tools">
-      <button class="tool" id="btnPhoto"><span class="icon">📷</span>Scan Plate</button>
-      <button class="tool" id="btnVoice"><span class="icon">🎤</span>Speak</button>
+        <div id="recentSection" class="recent-section">
+            <button class="recent-toggle" onclick="toggleRecentList()">
+                <span>Recent Vehicles</span>
+                <svg id="recentToggleIcon" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5z"/>
+                </svg>
+            </button>
+            <div id="recentList" class="recent-list"></div>
+        </div>
+
+        <input type="file" id="cameraInput" accept="image/*" capture="environment">
     </div>
 
-    <div class="status" id="status"></div>
-    <img id="imgPreview" alt="captured plate" />
-    <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" />
-  </div>
-
-  <!-- SAVED -->
-  <div class="card">
-    <div class="section-head">
-      <div class="section-title">Saved Vehicles</div>
-      <button class="clear-all" id="clearAll">Clear all</button>
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h3>⚙️ API Settings</h3>
+            <p>Enter your <strong>Google Gemini API key</strong>.<br>
+                Get one at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>
+            </p>
+            <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+                <button class="btn-save" onclick="saveApiKey()">Save</button>
+            </div>
+        </div>
     </div>
-    <div id="savedList"></div>
-    <div class="hint">Tap any vehicle to open its feedback page.</div>
-  </div>
 
-</div>
+    <script>
+        const inputField = document.getElementById('vehicleNum');
+        const stateSelect = document.getElementById('stateCode');
+        const cameraInput = document.getElementById('cameraInput');
+        const statusDiv = document.getElementById('ocr-status');
+        const spinnerOverlay = document.getElementById('spinnerOverlay');
+        const spinnerText = document.getElementById('spinnerText');
+        const previewArea = document.getElementById('previewArea');
+        const previewImg = document.getElementById('previewImg');
+        const inputGroup = document.getElementById('inputGroup');
+        const apiBadge = document.getElementById('apiBadge');
+        const settingsModal = document.getElementById('settingsModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const micBtn = document.getElementById('micBtn');
+        const recentSection = document.getElementById('recentSection');
+        const recentList = document.getElementById('recentList');
+        const suggestionsList = document.getElementById('suggestionsList');
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
-<script>
-(function(){
-  "use strict";
+        let allRecentVehicles = []; // Store it in memory for quick filtering
 
-  var BASE_URL = "https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html?centerid=5&vehicleno=";
-  var STORE_KEY = "shuttle_saved_plates_v1";
+        function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
-  var $ = function(id){ return document.getElementById(id); };
-  var stateEl=$("state"), plateEl=$("plate"), previewEl=$("preview"),
-      statusEl=$("status"), savedListEl=$("savedList"), recoEl=$("reco"),
-      cameraInput=$("cameraInput"), imgPreview=$("imgPreview");
+        function updateBadge() {
+            const key = getApiKey();
+            apiBadge.textContent = key ? 'GEMINI AI ✓' : 'NO API KEY';
+            apiBadge.className = key ? 'api-badge connected' : 'api-badge disconnected';
+        }
 
-  /* ---------- helpers ---------- */
-  function cleanRest(s){ return (s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
-  function fullPlate(){ return stateEl.value + cleanRest(plateEl.value); }
-  function pretty(p){ return (p||"").replace(/^(T[GS])/, "$1 "); }
+        function openSettings() {
+            apiKeyInput.value = getApiKey();
+            settingsModal.classList.add('active');
+        }
 
-  function updatePreview(){
-    var rest = cleanRest(plateEl.value);
-    if(!rest){ previewEl.innerHTML='<span class="ph">Full number appears here</span>'; }
-    else{ previewEl.innerHTML='<span class="ico">🚘</span><span class="val">'+stateEl.value+" "+rest+'</span>'; }
-    showReco();
-  }
+        function closeSettings() { settingsModal.classList.remove('active'); }
 
-  function setStatus(msg,kind){
-    statusEl.className = "status" + (kind ? " "+kind : "");
-    statusEl.textContent = msg||"";
-  }
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            key ? localStorage.setItem('gemini_api_key', key) : localStorage.removeItem('gemini_api_key');
+            updateBadge();
+            closeSettings();
+        }
 
-  function splitPlate(raw){
-    var s = cleanRest(raw);
-    if(s.indexOf("TG")===0) return {state:"TG", rest:s.slice(2)};
-    if(s.indexOf("TS")===0) return {state:"TS", rest:s.slice(2)};
-    return {state:null, rest:s};
-  }
-  function applyRaw(raw){
-    var p = splitPlate(raw);
-    if(p.state) stateEl.value = p.state;
-    plateEl.value = p.rest;
-    updatePreview();
-  }
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+        updateBadge();
 
-  /* ---------- storage ---------- */
-  function loadSaved(){
-    try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }catch(e){ return []; }
-  }
-  function persist(list){ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
+        function handleInputSuggestions() {
+            const val = inputField.value.trim().toUpperCase();
+            if (!val) {
+                suggestionsList.classList.remove('active');
+                return;
+            }
 
-  function remember(full){
-    var list = loadSaved();
-    list = list.filter(function(p){ return p !== full; });
-    list.unshift(full);
-    if(list.length > 50) list = list.slice(0,50);
-    persist(list);
-    renderSaved();
-  }
-  function deleteSaved(plate,ev){
-    if(ev) ev.stopPropagation();
-    persist(loadSaved().filter(function(p){ return p!==plate; }));
-    renderSaved();
-  }
+            // Simple "contains" match prioritizing the ending portion which the user types
+            const state = stateSelect.value;
+            const matches = allRecentVehicles.filter(v => v.includes(val) || v.startsWith(state + val));
 
-  /* ---------- the one action: save + open ---------- */
-  function go(plate){
-    var full = plate || fullPlate();
-    full = cleanRest(full);
-    var rest = full.replace(/^T[GS]/, "");
-    if(!rest){ setStatus("Enter a plate number first.", "err"); return; }
-    remember(full);
-    setStatus("Opening " + pretty(full) + " …", "ok");
-    window.open(BASE_URL + encodeURIComponent(full), "_blank");
-  }
+            if (matches.length === 0) {
+                suggestionsList.classList.remove('active');
+                return;
+            }
 
-  /* ---------- saved list (tap = go) ---------- */
-  function renderSaved(){
-    var list = loadSaved();
-    savedListEl.innerHTML = "";
-    if(!list.length){
-      savedListEl.innerHTML = '<div class="empty">No saved vehicles yet.</div>';
-      return;
-    }
-    list.forEach(function(plate){
-      var row = document.createElement("div");
-      row.className = "saved-item";
-      row.onclick = function(){ go(plate); };
+            suggestionsList.innerHTML = '';
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                
+                // Highlight the matched portion
+                let innerHtml = match;
+                if (match.startsWith(state + val)) {
+                    innerHtml = `<span>${state}</span><strong>${val}</strong><span>${match.substring((state + val).length)}</span>`;
+                } else {
+                    const idx = match.indexOf(val);
+                    if (idx > -1) {
+                         innerHtml = `<span>${match.substring(0, idx)}</span><strong>${val}</strong><span>${match.substring(idx + val.length)}</span>`;
+                    }
+                }
+                
+                div.innerHTML = innerHtml;
 
-      var bar = document.createElement("div"); bar.className="bar"; row.appendChild(bar);
+                div.onmousedown = function(e) { 
+                    e.preventDefault(); // Prevent blur when clicking item
+                    applyPlateNumber(match);
+                    suggestionsList.classList.remove('active');
+                    openFeedback(); // Auto-submit
+                };
+                suggestionsList.appendChild(div);
+            });
+            suggestionsList.classList.add('active');
+        }
 
-      var label = document.createElement("div");
-      label.className="plate"; label.textContent = pretty(plate); row.appendChild(label);
+        inputField.addEventListener('input', function () { 
+            this.value = this.value.toUpperCase(); 
+            handleInputSuggestions();
+        });
+        
+        inputField.addEventListener('focus', handleInputSuggestions);
+        inputField.addEventListener('blur', () => { setTimeout(() => { suggestionsList.classList.remove('active'); }, 150) });
+        inputField.addEventListener('keydown', (e) => { if (e.key === 'Enter') openFeedback(); });
 
-      var arrow = document.createElement("div"); arrow.className="arrow"; arrow.textContent="›"; row.appendChild(arrow);
+        function renderRecentList() {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['recent_vehicles'], function(result) {
+                    allRecentVehicles = result.recent_vehicles || [];
+                    displayRecentList(allRecentVehicles);
+                });
+            } else {
+                allRecentVehicles = JSON.parse(localStorage.getItem('recent_vehicles') || '[]');
+                displayRecentList(allRecentVehicles);
+            }
+        }
 
-      var del = document.createElement("button");
-      del.className="del"; del.textContent="🗑";
-      del.onclick = function(e){ deleteSaved(plate,e); };
-      row.appendChild(del);
+        function displayRecentList(recent) {
+            if (recent.length === 0) {
+                recentSection.classList.remove('active');
+                return;
+            }
+            recentList.innerHTML = '';
+            recent.forEach(no => {
+                const div = document.createElement('div');
+                div.className = 'recent-item';
+                
+                const textSpan = document.createElement('span');
+                textSpan.innerText = no;
+                div.appendChild(textSpan);
 
-      savedListEl.appendChild(row);
-    });
-  }
+                const arrowIcon = document.createElement('div');
+                arrowIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>`;
+                div.appendChild(arrowIcon);
 
-  /* ---------- recommendations while typing ---------- */
-  function showReco(){
-    var restTyped = cleanRest(plateEl.value);
-    recoEl.innerHTML=""; recoEl.classList.remove("show");
-    if(!restTyped) return;
-    var matches = loadSaved().filter(function(p){
-      var rest = splitPlate(p).rest;
-      return rest.indexOf(restTyped) !== -1 && rest !== restTyped;
-    }).slice(0,5);
-    if(!matches.length) return;
-    matches.forEach(function(p){
-      var it = document.createElement("div");
-      it.className="reco-item";
-      it.innerHTML = '<span>'+pretty(p)+'</span><span class="tag">tap to open</span>';
-      it.onclick = function(){ recoEl.classList.remove("show"); go(p); };
-      recoEl.appendChild(it);
-    });
-    recoEl.classList.add("show");
-  }
+                div.onclick = function() { 
+                    applyPlateNumber(no);
+                    openFeedback(); // Auto-submit when clicking a recent item from the list
+                };
+                recentList.appendChild(div);
+            });
+            recentSection.classList.add('active');
+        }
 
-  /* ---------- photo OCR ---------- */
-  function extractPlate(text){
-    var s = (text||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
-    var m = s.match(/T[GS]\d{1,2}[A-Z]{1,3}\d{3,4}/);
-    if(m) return m[0];
-    m = s.match(/[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{3,4}/);
-    if(m) return m[0];
-    return null;
-  }
-  function runOCR(file){
-    if(typeof Tesseract==="undefined"){ setStatus("OCR engine not loaded (check internet).","err"); return; }
-    setStatus("Reading plate… a few seconds.","busy");
-    Tesseract.recognize(file,"eng",{
-      tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    }).then(function(res){
-      var plate = extractPlate(res && res.data ? res.data.text : "");
-      if(plate){ applyRaw(plate); setStatus("Detected "+pretty(plate)+" — verify, then GO.","ok"); }
-      else{ setStatus("Couldn't read a plate. Type it manually.","err"); }
-    }).catch(function(err){
-      setStatus("OCR failed: "+(err&&err.message?err.message:err),"err");
-    });
-  }
-  cameraInput.addEventListener("change",function(e){
-    var file = e.target.files && e.target.files[0];
-    if(!file) return;
-    imgPreview.src = URL.createObjectURL(file);
-    imgPreview.style.display="block";
-    runOCR(file);
-  });
+        // Render list immediately on load if anything exists
+        renderRecentList();
 
-  /* ---------- voice ---------- */
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var recognizer=null, listening=false;
-  function normalizeSpeech(t){
-    t=(t||"").toUpperCase();
-    var nw={ZERO:"0",OH:"0",O:"0",ONE:"1",TWO:"2",TO:"2",THREE:"3",FOUR:"4",FOR:"4",
-            FIVE:"5",SIX:"6",SEVEN:"7",EIGHT:"8",NINE:"9"};
-    var words=t.replace(/[^A-Z0-9 ]/g," ").split(/\s+/), out="";
-    for(var i=0;i<words.length;i++){ var w=words[i]; if(!w) continue;
-      out += (nw[w]!==undefined) ? nw[w] : w; }
-    return out;
-  }
-  function startVoice(){
-    if(!SR){ setStatus("Voice not supported on this browser.","err"); return; }
-    if(listening && recognizer){ recognizer.stop(); return; }
-    recognizer = new SR();
-    recognizer.lang="en-IN"; recognizer.interimResults=false; recognizer.maxAlternatives=1;
-    recognizer.onstart=function(){ listening=true; $("btnVoice").classList.add("listen-pulse");
-      setStatus("Listening… say the plate.","busy"); };
-    recognizer.onresult=function(ev){ var txt=ev.results[0][0].transcript;
-      applyRaw(normalizeSpeech(txt)); setStatus("Heard “"+txt+"” — verify, then GO.","ok"); };
-    recognizer.onerror=function(ev){ setStatus("Voice error: "+ev.error,"err"); };
-    recognizer.onend=function(){ listening=false; $("btnVoice").classList.remove("listen-pulse"); };
-    try{ recognizer.start(); }catch(e){ setStatus("Voice error: "+e.message,"err"); }
-  }
+        function toggleRecentList() {
+            const list = document.getElementById('recentList');
+            const toggle = document.querySelector('.recent-toggle');
+            if (list) list.classList.toggle('open');
+            if (toggle) toggle.classList.toggle('open');
+        }
 
-  /* ---------- wire up ---------- */
-  plateEl.addEventListener("input", updatePreview);
-  stateEl.addEventListener("change", updatePreview);
-  plateEl.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } });
-  $("btnGo").addEventListener("click", function(){ go(); });
-  $("btnPhoto").addEventListener("click", function(){ cameraInput.click(); });
-  $("btnVoice").addEventListener("click", startVoice);
-  $("clearAll").addEventListener("click", function(){
-    if(confirm("Remove all saved vehicles?")){ persist([]); renderSaved(); }
-  });
-  document.addEventListener("click", function(e){
-    if(!recoEl.contains(e.target) && !e.target.closest(".field")) recoEl.classList.remove("show");
-  });
+        function triggerCamera() { cameraInput.value = ''; cameraInput.click(); }
+        function showSpinner(text) { spinnerText.innerText = text; spinnerOverlay.classList.add('active'); }
+        function hideSpinner() { spinnerOverlay.classList.remove('active'); }
+        function clearPreview() { previewArea.style.display = 'none'; previewImg.src = ''; }
+        function flashSuccess() { inputGroup.classList.add('flash-success'); setTimeout(() => inputGroup.classList.remove('flash-success'), 600); }
+        function flashError() { inputGroup.classList.add('flash-error'); setTimeout(() => inputGroup.classList.remove('flash-error'), 600); }
 
-  renderSaved();
-  updatePreview();
-})();
-</script>
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function extractPlateWithGemini(file) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error('NO_KEY');
+
+            const base64Image = await fileToBase64(file);
+            const mimeType = file.type || 'image/jpeg';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const MAX_RETRIES = 3;
+            for (let i = 0; i <= MAX_RETRIES; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: "Extract ONLY the vehicle registration number. No spaces. Example: TG09EA1234. If not found, say NOT_FOUND." },
+                                    { inline_data: { mime_type: mimeType, data: base64Image } }
+                                ]
+                            }],
+                            generationConfig: { temperature: 0.1 }
+                        })
+                    });
+
+                    if (response.status === 429 && i < MAX_RETRIES) {
+                        const wait = Math.pow(2, i) * 2000;
+                        await new Promise(r => setTimeout(r, wait));
+                        continue;
+                    }
+
+                    if (!response.ok) throw new Error(response.status === 400 ? 'INVALID_KEY' : 'API_ERROR');
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    return text.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                } catch (err) {
+                    if (i === MAX_RETRIES) throw err;
+                }
+            }
+        }
+
+        cameraInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const objectUrl = URL.createObjectURL(file);
+            previewImg.src = objectUrl;
+            previewArea.style.display = 'block';
+
+            if (!getApiKey()) {
+                statusDiv.innerText = "⚠ Set API key first (⚙️)";
+                statusDiv.style.color = "#f59e0b";
+                flashError();
+                return;
+            }
+
+            showSpinner('Analyzing plate...');
+            try {
+                const plateText = await extractPlateWithGemini(file);
+                hideSpinner();
+                if (!plateText || plateText.includes('NOTFOUND') || plateText.length < 4) {
+                    statusDiv.innerText = "Detection failed. Try again.";
+                    statusDiv.style.color = "#ef4444";
+                    flashError();
+                } else {
+                    applyPlateNumber(plateText);
+                }
+            } catch (err) {
+                hideSpinner();
+                statusDiv.innerText = err.message === 'INVALID_KEY' ? "❌ Invalid Key" : "Error. Try again.";
+                statusDiv.style.color = "#ef4444";
+                flashError();
+            }
+            setTimeout(() => { statusDiv.innerText = ""; }, 5000);
+            URL.revokeObjectURL(objectUrl);
+        });
+
+        const KNOWN_STATES = ['TG', 'TS', 'AP', 'KA', 'MH', 'DL', 'TN', 'KL', 'UP', 'RJ', 'GJ', 'HR', 'PB', 'MP', 'WB'];
+
+        function applyPlateNumber(plateText) {
+            const first2 = plateText.substring(0, 2);
+            if (KNOWN_STATES.includes(first2)) {
+                stateSelect.value = first2;
+                inputField.value = plateText.substring(2);
+            } else {
+                inputField.value = plateText;
+            }
+            statusDiv.innerText = "✓ Detected: " + plateText;
+            statusDiv.style.color = "#22c55e";
+            flashSuccess();
+        }
+
+        function saveRecentVehicle(fullNo) {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['recent_vehicles'], function(result) {
+                    updateAndSaveList(result.recent_vehicles || [], fullNo, true);
+                });
+            } else {
+                let recent = JSON.parse(localStorage.getItem('recent_vehicles') || '[]');
+                updateAndSaveList(recent, fullNo, false);
+            }
+        }
+
+        function updateAndSaveList(recent, fullNo, useChromeStorage) {
+            const index = recent.indexOf(fullNo);
+            if (index > -1) {
+                recent.splice(index, 1);
+            }
+            recent.unshift(fullNo);
+            if (recent.length > 5) recent.pop(); // Keep max 5 recent vehicles
+            
+            allRecentVehicles = recent; // Update in-memory copy
+            renderRecentList(); // Re-render the bottom accordion to stay synced
+
+            if (useChromeStorage) {
+                chrome.storage.local.set({ 'recent_vehicles': recent });
+            } else {
+                localStorage.setItem('recent_vehicles', JSON.stringify(recent));
+            }
+        }
+
+        function openFeedback() {
+            const fullNo = stateSelect.value + inputField.value.trim().replace(/[^A-Z0-9]/gi, '').toUpperCase();
+            if (!inputField.value.trim()) return alert("Enter vehicle number.");
+            saveRecentVehicle(fullNo);
+            window.location.href = `https://qcommute.falconavl.com/hydemp/ShuttleFeedback/index.html?centerid=5&vehicleno=${fullNo}`;
+        }
+
+        let recognition = null;
+        let isListening = false;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN'; // Works well for Indian vehicle plates
+
+            recognition.onstart = function() {
+                isListening = true;
+                micBtn.classList.add('listening');
+                statusDiv.innerText = "Listening...";
+                statusDiv.style.color = "#818cf8";
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                const formatted = transcript.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                
+                if (formatted) {
+                    applyPlateNumber(formatted);
+                } else {
+                    statusDiv.innerText = "Could not detect plate number.";
+                    statusDiv.style.color = "#ef4444";
+                    flashError();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error", event.error);
+                statusDiv.innerText = "Voice input failed: " + event.error;
+                statusDiv.style.color = "#ef4444";
+                flashError();
+                stopListening();
+            };
+
+            recognition.onend = function() {
+                stopListening();
+            };
+        } else {
+            if (micBtn) micBtn.style.display = 'none';
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert("Voice input is not supported in your browser.");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            if (statusDiv.innerText === "Listening...") {
+                setTimeout(() => { if (statusDiv.innerText === "Listening...") statusDiv.innerText = ""; }, 500);
+            }
+        }
+    </script>
 </body>
+
 </html>
